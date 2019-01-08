@@ -1,0 +1,9 @@
+[package]
+name = "where_am_i"
+version = "0.1.0"
+authors = ["kekonen <daniil.naumetc@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+scraper = "0.9.0"
+reqwest = "0.9.6"

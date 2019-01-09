@@ -3,31 +3,71 @@ extern crate scraper;
 
 // importation syntax
 use scraper::{Html, Selector};
+use std::panic;
+use std::fmt;
 
-fn main() {
-    parse_location("https://www.iplocation.net/");
+
+struct Location {
+  country: String,
+  region: String,
 }
 
-fn parse_location(url: &str) {
+impl fmt::Display for Location {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Country: {}, Region: {}", self.country, self.region)
+    }
+}
 
-   let mut resp = reqwest::get(url).unwrap();
-   assert!(resp.status().is_success());
+fn main() {
+    match parse_ipcim("https://ipcim.com/en/?p=where") {
+        Some(location) => println!("{}", location),
+        None => 
+            match parse_iplocation("https://www.iplocation.net/") {
+                Some(location) => println!("{}", location),
+                None => println!("Kek!"),
+            },
+    }
+}
 
-   let body = resp.text().unwrap();
-   // parses string of HTML as a document
-   let fragment = Html::parse_document(&body);
-   // parses based on a CSS selector
-   let country_selector = Selector::parse("div.row:nth-child(11) > div:nth-child(1) > table:nth-child(2) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2)").unwrap();
-   let region_selector = Selector::parse("div.row:nth-child(11) > div:nth-child(1) > table:nth-child(2) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(3)").unwrap();
-   
-   let country_html = fragment.select(&country_selector).next().unwrap();
-   let region_html = fragment.select(&region_selector).next().unwrap();
- 
-   println!("Country: {}, region: {}", country_html.text().collect::<Vec<_>>()[0].trim(), region_html.text().collect::<Vec<_>>()[0].trim());
-   // iterate over elements matching our selector
-   //for story in fragment.select(&stories) {
-        // grab the headline text and place into a vector
-   //     let story_txt = story.text().collect::<Vec<_>>();
-   //     println!("{:?}", story_txt);
-   // }
+fn parse_iplocation(url: &str) -> Option<Location> {
+
+    let mut resp = reqwest::get(url).unwrap();
+    assert!(resp.status().is_success());
+
+    let body = resp.text().unwrap();
+
+    let fragment = Html::parse_document(&body);
+
+    let country_selector = Selector::parse("div.row:nth-child(11) > div:nth-child(1) > table:nth-child(5) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2)").unwrap();
+
+    let region_selector = Selector::parse("div.row:nth-child(11) > div:nth-child(1) > table:nth-child(2) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(3)").unwrap();
+
+    let country = match fragment.select(&country_selector).next() {
+        Some(val) => val.text().collect::<Vec<_>>()[0].trim().to_string(),
+        None => return None,
+    };
+
+    let region = match fragment.select(&region_selector).next() {
+        Some(val) => val.text().collect::<Vec<_>>()[0].trim().to_string(),
+        None => return None,
+    };
+
+    Some(Location {country: country.to_string(), region: region.to_string()})
+}
+
+fn parse_ipcim(url: &str) -> Option<Location> {
+
+    let mut resp = reqwest::get(url).unwrap();
+    assert!(resp.status().is_success());
+
+    let body = resp.text().unwrap();
+
+    let fragment = Html::parse_document(&body);
+
+    let geo_selector = Selector::parse("#geoinfo").unwrap();
+
+    match fragment.select(&geo_selector).next() {
+        Some(val) => return Some(Location { country: val.text().collect::<Vec<_>>()[4].trim().to_string() , region: val.text().collect::<Vec<_>>()[6].trim().to_string()}),
+        None => return None,
+    };
 }

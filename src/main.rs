@@ -38,7 +38,7 @@ fn parse_iplocation(url: &str) -> Option<Location> {
 
     let fragment = Html::parse_document(&body);
 
-    let country_selector = Selector::parse("div.row:nth-child(11) > div:nth-child(1) > table:nth-child(5) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2)").unwrap();
+    let country_selector = Selector::parse("div.row:nth-child(11) > div:nth-child(1) > table:nth-child(2) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(2)").unwrap();
 
     let region_selector = Selector::parse("div.row:nth-child(11) > div:nth-child(1) > table:nth-child(2) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(3)").unwrap();
 

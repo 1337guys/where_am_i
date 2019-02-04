@@ -3,6 +3,8 @@ name = "where_am_i"
 version = "0.1.0"
 authors = ["kekonen <daniil.naumetc@gmail.com>"]
 edition = "2018"
+license = "WTFPL"
+description = "Gives your location depending on your IP"
 
 [dependencies]
 scraper = "0.9.0"

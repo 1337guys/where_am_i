@@ -1,10 +1,24 @@
 extern crate reqwest;
 extern crate scraper;
+extern crate serde_json;
+extern crate serde_derive;
+extern crate serde;
+
+
 
 // importation syntax
 use scraper::{Html, Selector};
 use std::panic;
 use std::fmt;
+#[macro_use]
+use serde_derive::{Serialize, Deserialize};
+#[macro_use]
+use serde_json::{Result, Value};
+
+#[derive(Serialize, Deserialize)]
+struct IP {
+    ip: String,
+}
 
 
 struct Location {
@@ -19,20 +33,26 @@ impl fmt::Display for Location {
 }
 
 fn main() {
-    match parse_ipcim("https://ipcim.com/en/?p=where") {
+    match parse_ipify() {
         Some(location) => println!("{}", location),
-        None => 
-            match parse_iplocation("https://www.iplocation.net/") {
+        None =>
+            match parse_ipcim("https://ipcim.com/en/?p=where") {
                 Some(location) => println!("{}", location),
-                None => println!("Kek!"),
-            },
+                None => 
+                    match parse_iplocation("https://www.iplocation.net/") {
+                        Some(location) => println!("{}", location),
+                        None => println!("Kek!"),
+                    },
+            }
     }
 }
 
 fn parse_iplocation(url: &str) -> Option<Location> {
 
     let mut resp = reqwest::get(url).unwrap();
-    assert!(resp.status().is_success());
+    if !resp.status().is_success() {
+        return None;
+    }
 
     let body = resp.text().unwrap();
 
@@ -58,7 +78,9 @@ fn parse_iplocation(url: &str) -> Option<Location> {
 fn parse_ipcim(url: &str) -> Option<Location> {
 
     let mut resp = reqwest::get(url).unwrap();
-    assert!(resp.status().is_success());
+    if !resp.status().is_success() {
+        return None;
+    }
 
     let body = resp.text().unwrap();
 
@@ -70,4 +92,29 @@ fn parse_ipcim(url: &str) -> Option<Location> {
         Some(val) => return Some(Location { country: val.text().collect::<Vec<_>>()[4].trim().to_string() , region: val.text().collect::<Vec<_>>()[6].trim().to_string()}),
         None => return None,
     };
+}
+
+
+
+fn parse_ipify() -> Option<Location> {
+
+    let mut resp = reqwest::get("https://api.ipify.org?format=json").unwrap();
+    if !resp.status().is_success() {
+        return None;
+    }
+
+    let body = resp.text().unwrap();
+
+    let v: IP = serde_json::from_str(&body).unwrap();
+
+    let mut resp = reqwest::get(&format!("http://ip-api.com/json/{}", v.ip)).unwrap();
+    if !resp.status().is_success() {
+        return None;
+    }
+
+    let body = resp.text().unwrap();
+
+    let v: Value = serde_json::from_str(&body).unwrap();
+
+    Some(Location { country: v["country"].to_string() , region: v["city"].to_string()})
 }
